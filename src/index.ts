@@ -7,8 +7,9 @@ import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
-import { connectDB } from './db';
+import { connectDB, contentModel } from './db';
 import { userModel } from './db';
+import { userMiddleware } from './middleware';
 
 const app = express();
 const port = 3000;
@@ -124,9 +125,59 @@ app.post('/api/v1/signin', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error });
   }
 });
-app.post('/api/v1/content', (req, res) => {});
-app.get('/api/v1/content', (req, res) => {});
-app.delete('/api/v1/content', (req, res) => {});
+
+app.post('/api/v1/content', userMiddleware, async (req, res) => {
+  const { link, type, title } = req.body;
+
+  try {
+    await contentModel.create({
+      link,
+      type,
+      title,
+      tags: [],
+      //@ts-ignore
+      userId: req.userId,
+    });
+
+    res.status(200).json({ message: 'Content added' });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+});
+
+app.get('/api/v1/content', userMiddleware, async (req, res) => {
+  //@ts-ignore
+  const userId = req.userId;
+
+  try {
+    const content = await contentModel.find({ userId: userId }).populate({
+      path: 'userId',
+      select: 'username',
+    });
+
+    res.json({ content });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+});
+
+app.delete('/api/v1/content', userMiddleware, async (req, res) => {
+  //@ts-ignore
+  const userId = req.userId;
+
+  const { contentId } = req.body;
+
+  try {
+    await contentModel.deleteOne({ _id: contentId, userId });
+    res.status(200).json({ contentId });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+});
+
 app.post('/api/v1/brain/share', (req, res) => {});
 app.get('/api/v1/brain/:shareLink', (req, res) => {});
 
