@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import zod from 'zod';
 import bcrypt from 'bcrypt';
 
+import jwt from 'jsonwebtoken';
+
 dotenv.config();
 
 import { connectDB } from './db';
@@ -76,7 +78,52 @@ app.post('/api/v1/signup', async (req, res) => {
     console.log(error);
   }
 });
-app.post('/api/v1/signin', (req, res) => {});
+
+app.post('/api/v1/signin', async (req, res) => {
+  const signinSchema = zod.object({
+    username: zod.string(),
+    password: zod.string(),
+  });
+
+  const zodResponse = signinSchema.safeParse(req.body);
+
+  if (!zodResponse.success) {
+    return res.status(411).json({ msg: 'Invalid inputs' });
+  }
+
+  const { username, password } = zodResponse.data;
+
+  try {
+    const user = await userModel.findOne({ username });
+
+    if (!user) {
+      return res
+        .status(403)
+        .json({ message: "user with that username doesn't exists" });
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordCorrect) {
+      return res.status(403).json({ message: 'Incorrect password' });
+    }
+
+    const secret = process.env.JWT_USER_PASSWORD;
+
+    if (!secret) {
+      throw new Error('JWT secret is not defined');
+    }
+
+    const token = jwt.sign({ id: user._id }, secret, {
+      expiresIn: '30d',
+    });
+
+    res.status(200).json({ message: 'Signin successfull', token });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+});
 app.post('/api/v1/content', (req, res) => {});
 app.get('/api/v1/content', (req, res) => {});
 app.delete('/api/v1/content', (req, res) => {});
