@@ -7,9 +7,10 @@ import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
-import { connectDB, contentModel } from './db';
+import { connectDB, contentModel, linkModel } from './db';
 import { userModel } from './db';
 import { userMiddleware } from './middleware';
+import { random } from './config';
 
 const app = express();
 const port = 3000;
@@ -178,9 +179,63 @@ app.delete('/api/v1/content', userMiddleware, async (req, res) => {
   }
 });
 
-app.post('/api/v1/brain/share', (req, res) => {});
+app.post('/api/v1/brain/share', userMiddleware, async (req, res) => {
+  const { share } = req.body;
+  try {
+    if (share) {
+      const existingLink = await linkModel.findOne({
+        //@ts-ignore
+        userId: req.userId,
+      });
+      if (existingLink) {
+        return res.json({ hash: existingLink.hash });
+      }
 
-app.get('/api/v1/brain/:shareLink', (req, res) => {});
+      const link = await linkModel.create({
+        //@ts-ignore
+        userId: req.userId,
+        hash: random(10),
+      });
+      res.json({ hash: link.hash });
+    } else {
+      await linkModel.deleteOne({
+        //@ts-ignore
+        userId: req.userId,
+      });
+      res.json({ message: 'removed sharable link' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+});
+
+app.get('/api/v1/brain/:shareLink', async (req, res) => {
+  const hash = req.params.shareLink;
+
+  try {
+    const link = await linkModel.findOne({ hash });
+
+    if (!link) {
+      return res.status(411).json({ message: 'Sorry, incorrect input' });
+    }
+
+    const content = await contentModel.find({ userId: link.userId }).populate({
+      path: 'userId',
+      select: 'username',
+    });
+
+    const user = await userModel.findOne({ _id: link.userId });
+
+    res.json({
+      username: user?.username,
+      content,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+});
 
 const start = async () => {
   try {
