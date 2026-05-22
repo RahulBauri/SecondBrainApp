@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import zod from 'zod';
 import bcrypt from 'bcrypt';
+import cors from 'cors';
 
 import jwt from 'jsonwebtoken';
 
@@ -16,6 +17,12 @@ const app = express();
 const port = 3000;
 
 app.use(express.json());
+app.use(
+  cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  }),
+);
 
 app.post('/api/v1/signup', async (req, res) => {
   const signupSchema = zod.object({
@@ -26,12 +33,12 @@ app.post('/api/v1/signup', async (req, res) => {
       .regex(/^[A-Za-z]+$/, 'Username must contain only letters'),
     password: zod
       .string()
-      .min(8, 'Minimum 8 characters')
-      .max(20, 'Maximum 20 characters')
-      .regex(/[a-z]/, 'Must include a lowercase letter')
-      .regex(/[A-Z]/, 'Must include an uppercase letter')
-      .regex(/\d/, 'Must include a number')
-      .regex(/[^A-Za-z\d]/, 'Must include a special character'),
+      .min(8, 'Password must be minimum 8 characters')
+      .max(20, 'Password must be maximum 20 characters')
+      .regex(/[a-z]/, 'Password must include a lowercase letter')
+      .regex(/[A-Z]/, 'Password must include an uppercase letter')
+      .regex(/\d/, 'Password must include a number')
+      .regex(/[^A-Za-z\d]/, 'Password must include a special character'),
   });
 
   const zodResponse = signupSchema.safeParse(req.body);

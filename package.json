@@ -13,10 +13,12 @@
   "description": "BE+FE, stack - Typescript, nodejs, express, mongodb, Goal of the project - To build a website where we can store all types of relevant links, links containing the whole info, and later when we query/ask question to an LLM model (like chatgpt) about some topic then we include the most relevant stored link contents along with aur question to the LLM so that the LLM model will have the full context and will send us the response that will be more rich than if we only send the question without any context",
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
     "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
